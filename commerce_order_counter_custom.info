@@ -1,0 +1,6 @@
+name = Custom Commerce Order Counters
+description = Collection of different Order Counters
+dependencies[] = commerce
+dependencies[] = commerce_order_counter
+package = custom
+core = 7.x

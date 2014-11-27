@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file commerce_order_counter_custom.module
+ */
+
+include __DIR__ . '/commerce_order_counter_custom.prefixed.inc';
+include __DIR__ . '/commerce_order_counter_custom.country.inc';
+
+/**
+ * Implements hook_entity_property_info_alter().
+ *
+ * @see commerce_order_counter_get_properties().
+ */
+function commerce_order_counter_custom_entity_property_info_alter(&$info) {
+  // Add the order counter to the site information. Even if this is just a
+  // "placeholder" entity, i.e., has no schema it functions as a bin for this
+  // value we then recover it using tokens for the rules action.
+  $info['commerce_order']['properties']['order_counter'] = array(
+    'label' => t("Order counter"),
+    'description' => t('Current order counter'),
+    'getter callback' => 'commerce_order_counter_custom_get_properties',
+    'type' => 'text',
+  );
+}
+
+/**
+ * Entity metadata callback: returns the order counter.
+ *
+ * @see commerce_order_counter_entity_property_info_alter()
+ */
+function commerce_order_counter_custom_get_properties(stdClass $data, array $options, $name) {
+  switch ($name) {
+    case 'order_counter':
+      $order_wrapper = entity_metadata_wrapper('commerce_order', $data);
+      $country = $order_wrapper
+        ->commerce_customer_shipping
+        ->commerce_customer_address
+        ->country
+        ->value();
+
+      return commerce_order_counter_custom_order_get($country);
+  }
+}
+
+function commerce_order_counter_custom_order_get($country) {
+  $class = variable_get('CommerceOrderCounterClass', 'CountryPrefixedCommerceOrderCounter');
+  // The scope resolution operator needs PHP 5.3: handle PHP 5.2 also.
+  return version_compare(PHP_VERSION, '5.3.0', '<') ?
+    call_user_func(array($class, 'getPrefixed'), $country)
+    :
+    $class::getPrefixed($country);
+}
+
